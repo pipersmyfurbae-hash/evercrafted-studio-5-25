@@ -4,15 +4,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from core.database import Base, engine
-import orm.models  # noqa: F401 — registers ORM models on Base.metadata
+from core.database import engine  # noqa: F401 — imported to validate DB connection on startup
 from routers import blueprints, emotion
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create all tables on startup (dev convenience; use Alembic for production)
-    Base.metadata.create_all(bind=engine)
+    # Tables are managed exclusively by Alembic migrations.
+    # Run: alembic upgrade head
     yield
 
 

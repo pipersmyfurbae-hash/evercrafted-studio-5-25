@@ -1,0 +1,432 @@
+openapi: 3.0.3
+info:
+  title: Evercrafted Studio MVP API
+  version: 1.0.0
+  description: API contract for Evercrafted Studio MVP.
+servers:
+  - url: https://api.evercrafted.app/api/v1
+    description: Production
+  - url: http://localhost:8000/api/v1
+    description: Local development
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      security: []
+      responses:
+        "200":
+          description: API healthy
+
+  /auth/signup:
+    post:
+      summary: Create account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthSignupRequest"
+      responses:
+        "200":
+          description: Auth response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/login:
+    post:
+      summary: Login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthLoginRequest"
+      responses:
+        "200":
+          description: Auth response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /me:
+    get:
+      summary: Current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /emotion/classify:
+    post:
+      summary: Classify emotion from memory or mood text
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmotionClassifyRequest"
+      responses:
+        "200":
+          description: Emotion classification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Emotion"
+
+  /placement/generate:
+    post:
+      summary: Generate deterministic placement geometry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlacementGenerateRequest"
+      responses:
+        "200":
+          description: Generated placements
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  placements:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Placement"
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+
+  /blueprints/compile:
+    post:
+      summary: Compile engine outputs into EC_CANON_V1 blueprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BlueprintCompileRequest"
+      responses:
+        "200":
+          description: Compiled blueprint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Blueprint"
+
+  /blueprints:
+    get:
+      summary: List blueprints
+      responses:
+        "200":
+          description: Blueprint list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BlueprintSummary"
+    post:
+      summary: Save blueprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Blueprint"
+      responses:
+        "200":
+          description: Saved blueprint
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Blueprint"
+
+  /blueprints/{id}:
+    get:
+      summary: Get blueprint by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+    patch:
+      summary: Update blueprint
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+    delete:
+      summary: Delete blueprint
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+
+  /inventory:
+    get:
+      summary: List inventory
+      responses:
+        "200":
+          description: Inventory items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryItem"
+    post:
+      summary: Create inventory item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryItemInput"
+
+  /build-sheet/generate:
+    post:
+      summary: Generate BuildBloom build sheet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [blueprint]
+              properties:
+                blueprint:
+                  $ref: "#/components/schemas/Blueprint"
+      responses:
+        "200":
+          description: Build sheet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildSheet"
+
+  /render-prompt/generate:
+    post:
+      summary: Generate render prompt from blueprint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [blueprint, mode]
+              properties:
+                blueprint:
+                  $ref: "#/components/schemas/Blueprint"
+                mode:
+                  type: string
+                  enum: [product_white_background, lifestyle_scene, closeup_detail, etsy_visual]
+      responses:
+        "200":
+          description: Render prompt
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  prompt_text:
+                    type: string
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AuthSignupRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+        name: { type: string }
+
+    AuthLoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+
+    AuthResponse:
+      type: object
+      properties:
+        token: { type: string }
+        user:
+          $ref: "#/components/schemas/User"
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: string }
+
+    EmotionClassifyRequest:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string }
+        season: { type: string }
+        size_in: { type: integer }
+
+    Emotion:
+      type: object
+      properties:
+        primary_tone: { type: string }
+        valence: { type: number }
+        arousal: { type: number }
+        quadrant: { type: string }
+        emotion_vector:
+          type: object
+          additionalProperties:
+            type: number
+        palette_direction: { type: string }
+        density_bias: { type: string }
+        movement_bias: { type: string }
+
+    Placement:
+      type: object
+      properties:
+        placement_id: { type: string }
+        material_id: { type: string }
+        role: { type: string }
+        layer: { type: string }
+        theta_deg: { type: number }
+        clock_position: { type: string }
+        radius_norm: { type: number }
+        radius_in: { type: number }
+        rotation_deg: { type: number }
+        scale: { type: number }
+        z_index: { type: integer }
+        cluster_id: { type: string }
+
+    Blueprint:
+      type: object
+      required: [blueprint_id, version, name, base, emotion, formula, dna, placements]
+      properties:
+        blueprint_id: { type: string }
+        version: { type: string }
+        name: { type: string }
+        base: { type: object }
+        emotion:
+          $ref: "#/components/schemas/Emotion"
+        formula: { type: object }
+        dna: { type: object }
+        placements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Placement"
+        materials:
+          type: array
+          items:
+            type: object
+        visualization: { type: object }
+        manufacturing: { type: object }
+        metadata: { type: object }
+
+    BlueprintSummary:
+      type: object
+      properties:
+        id: { type: string }
+        blueprint_id: { type: string }
+        name: { type: string }
+        formula_id: { type: string }
+        emotion_quadrant: { type: string }
+        created_at: { type: string }
+
+    PlacementGenerateRequest:
+      type: object
+      properties:
+        base: { type: object }
+        formula: { type: object }
+        dna: { type: object }
+        materials:
+          type: array
+          items:
+            type: object
+
+    BlueprintCompileRequest:
+      type: object
+      properties:
+        emotion:
+          $ref: "#/components/schemas/Emotion"
+        formula: { type: object }
+        dna: { type: object }
+        placements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Placement"
+        materials:
+          type: array
+          items:
+            type: object
+
+    InventoryItem:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type: { type: string }
+        role: { type: string }
+        color: { type: string }
+        quantity: { type: number }
+        unit_cost: { type: number }
+        tags:
+          type: array
+          items: { type: string }
+
+    InventoryItemInput:
+      type: object
+      required: [name, type, role]
+      properties:
+        name: { type: string }
+        type: { type: string }
+        role: { type: string }
+        color: { type: string }
+        quantity: { type: number }
+        unit_cost: { type: number }
+        tags:
+          type: array
+          items: { type: string }
+
+    BuildSheet:
+      type: object
+      properties:
+        materials:
+          type: array
+          items: { type: object }
+        steps:
+          type: array
+          items: { type: object }
+        estimated_minutes: { type: integer }
+        difficulty: { type: string }
+        quality_checklist:
+          type: array
+          items: { type: string }
